@@ -44,14 +44,14 @@ struct P{
     P(int x, int y):x(x),y(y){}
     P operator +(const P&p){ return P(x+p.x, y+p.y); }
     bool ok(){ return (x>=0 && y>=0 && x<n && y<n); }
-    void out(){
-        cerr<<x<<' '<<y<<endl; }
+    void out(){cerr<<x<<' '<<y<<endl; }
 };
 
 vp work;
 bool a[N+10][N+10];
 P d[4]={P(-1,0),P(1,0),P(0,-1),P(0,1)}; //up down left right
 char c[5]="UDLR";
+int x, y;
 
 class SnowCleaning{
 public:
@@ -68,24 +68,33 @@ public:
     }
     vs nextDay(vi s){
         vs ret; 
-        rep(i, sz(work)){
-            while(1){
-                k=rand()%4;
-                if ((work[i]+d[k]).ok()){
-                    work[i]=work[i]+d[k];
-                    ret.pb("M "+dtoi(i)+" "+c[k]);
-                    break;
-                }
-            }
-        }
-        rep(i, sz(s)/2){
-            a[s[i*2]][s[i*2+1]]=1;
-            if (rand()%10==0 && sz(work)<100){
-                P p(s[i*2], s[i*2+1]); work.pb(p);
+        if (!sz(work)){
+            rep(i, n){
+                P p(0, i);
+                work.pb(p);
                 ret.pb("H "+dtoi(p.x)+' '+dtoi(p.y));
             }
+            rep(i, n){
+                P p(i, 0);
+                work.pb(p);
+                ret.pb("H "+ dtoi(p.x)+' '+dtoi(p.y));
+            }
+            x=0, y=3;
         }
-        
+        else{
+            if (!(d[x]+work[0]).ok()) x=1-x;
+            if (!(d[y]+work[n]).ok()) y=5-y;
+    
+            rep(i, n){
+                work[i]=work[i]+d[x];
+                ret.pb("M "+dtoi(i)+' '+c[x]);
+            }
+            rep(i, n){
+                work[i+n]=work[i+n]+d[y];
+                ret.pb("M "+dtoi(n+i)+' '+c[y]);
+            } 
+//            rep(i, sz(ret)) cerr<<ret[i]<<end
+        }
         return ret;
     }
 
