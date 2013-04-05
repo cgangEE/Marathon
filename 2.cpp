@@ -113,7 +113,7 @@ bool SNOW[N+10][N+10];
 bool f[N*N+10];
 P d[4]={P(-1,0),P(1,0),P(0,-1),P(0,1)}; //up down left right
 char c[5]="UDLR";
-int x, y, Snf, day;
+int x, y;
 
 class SnowCleaning{
 public:
@@ -127,7 +127,6 @@ public:
     int init (int n, int pay, int fine){
         ::n=n, ::pay=pay, ::fine=fine; 
         work.clear(), clr(SNOW, 0), srand(time(NULL));
-        Snf=day=0;
     }
     vs nextDay(vi s){
         vp snow; vs ret;
@@ -170,10 +169,8 @@ public:
                     */
                 }
             }
-        Snf+=sz(s), day++;
-        double snf= min(snf+4.5, (double)Snf/day);
-
-        int mw=min(100, (int)(sqrt(snf * fine / pay) * n / 4));
+        
+        int mw=min(100, fine*(sz(snow))/pay/3);
         snow.clear();
         rep(i, n) rep(j, n) if (SNOW[i][j]) snow.pb(P(i,j));
         rep(i, sz(snow)) if (sz(work)<mw && !f[i]){
