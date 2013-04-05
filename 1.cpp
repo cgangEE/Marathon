@@ -99,21 +99,25 @@ MCMF<N*100> mcmf;
 int i,j,k,m,n,l;
 int pay, fine;
 struct P{
-    int x, y;
+    int x, y, d;
     P(){}
     P(int x, int y):x(x),y(y){}
     P operator +(const P&p){ return P(x+p.x, y+p.y); }
+    P operator -(const P&p){ return P(x-p.x, y-p.y); }    
     bool ok(){ return (x>=0 && y>=0 && x<n && y<n); }
     int mht(P &p){ return abs(x-p.x)+abs(y-p.y); }
     void out(){cerr<<x<<' '<<y<<endl; }
 };
 
-vp work;
-bool SNOW[N+10][N+10];
-bool f[N*N+10];
+vp work, snow;
+vs ret;
+bool SNOW[N+10][N+10], WORK[N+10][N+10];
 P d[4]={P(-1,0),P(1,0),P(0,-1),P(0,1)}; //up down left right
 char c[5]="UDLR";
-int x, y, Snf, day;
+int x, y;
+double Snf, day, snf;
+int w2s[N*N+10], s2w[N*N+10];
+
 
 class SnowCleaning{
 public:
@@ -124,13 +128,38 @@ public:
         repd(i, sz(v)-1, 0) ret+=v[i]+'0';        
         return ret;
     }
+    int drct(int i, int j){
+        P p=snow[j]-work[i];
+        if (p.x==0 && p.y==0) return -1;
+        if (p.x!=0){
+            p.x/=abs(p.x);
+            rep(k, 4) if (d[k].x==p.x) return k;
+        }
+        if (p.y!=0){
+            p.y/=abs(p.y);
+            rep(k, 4) if (d[k].y==p.y) return k;
+        }
+    }
+    char gao(int i){
+        int ret=rand()%4;
+        if (! (d[ret]+work[i]).ok() ) return -1;
+        return ret;
+    }    
+    void move(int i, int k){
+        if (k!=-1){
+            work[i]=work[i]+d[k];
+            ret.pb("M "+dtoi(i)+' '+c[k]);
+        }
+        SNOW[work[i].x][work[i].y]=0;
+    }
     int init (int n, int pay, int fine){
         ::n=n, ::pay=pay, ::fine=fine; 
-        work.clear(), clr(SNOW, 0), srand(time(NULL));
-        Snf=day=0;
+        work.clear(), clr(SNOW, 0), clr(WORK, 0);
+        srand(time(NULL));
+        Snf=day= snf=0;
     }
     vs nextDay(vi s){
-        vp snow; vs ret;
+        snow.clear(), ret.clear();
         
         rep(i, sz(s)/2) SNOW[s[i*2]][s[i*2+1]]=1;
         rep(i, n) rep(j, n) if (SNOW[i][j]) snow.pb(P(i,j));
@@ -144,43 +173,36 @@ public:
         int flow, cost;
         mcmf.minCost(flow, cost);
         
-        clr(f, 0);
-        rep(i, sz(work))
-            rep(j, sz(mcmf.a[i])){
-                e_t e=mcmf.a[i][j];  
-                int j=e.to-sz(work);
-                if (e.cap==0 && j>=0 && j<sz(snow)){
-                    if (work[i].x!=snow[j].x){
-                        if (work[i].x<snow[j].x) 
-                            work[i].x++, ret.pb("M "+dtoi(i)+" D");
-                        else
-                            work[i].x--, ret.pb("M "+dtoi(i)+" U");
-                    }
-                    else if (work[i].y!=snow[j].y){
-                        if (work[i].y<snow[j].y)
-                            work[i].y++, ret.pb("M "+dtoi(i)+" R");
-                        else
-                            work[i].y--, ret.pb("M "+dtoi(i)+" L");
-                    }
-                    f[j]=1;
-                    SNOW[work[i].x][work[i].y]=0;
-                    
-                /*    cerr<<i<<' '<<j<<endl;
-                    cerr.flush();
-                    */
-                }
-            }
+
+        clr(w2s, -1), clr(s2w, -1);
+        rep(i, sz(work)) rep(j, sz(mcmf.a[i])){
+            e_t e=mcmf.a[i][j];
+            int j=e.to-sz(work);
+            if (e.cap==0 && j>=0 && j<sz(snow))
+                w2s[i]=j, s2w[j]=i;
+        }
+        rep(i, sz(work))                                                             //Move Worker
+            if (w2s[i]!=-1)
+                move(i, drct(i, w2s[i]));    
+            else
+                move(i, gao(i));
+
+        
         Snf+=sz(s), day++;
-        double snf= min(snf+4.5, (double)Snf/day);
+
+        snf=(int)min(snf+4.5, Snf/day-4.5);
+
+       // cerr<<Snf/day<<' '<<snf<<endl;
 
         int mw=min(100, (int)(sqrt(snf * fine / pay) * n / 4));
-        snow.clear();
+        
+        snow.clear();                                                               //Hire Worker
         rep(i, n) rep(j, n) if (SNOW[i][j]) snow.pb(P(i,j));
-        rep(i, sz(snow)) if (sz(work)<mw && !f[i]){
+        rep(i, sz(snow)) if (sz(work)<mw && s2w[i]==-1){
             work.pb(snow[i]), ret.pb("H "+dtoi(snow[i].x)+' '+dtoi(snow[i].y));
             SNOW[snow[i].x][snow[i].y]=0;
         }
-            
+
         return ret;
     }
 
