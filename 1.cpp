@@ -99,9 +99,9 @@ MCMF<N*100> mcmf;
 int i,j,k,m,n,l;
 int pay, fine;
 struct P{
-    int x, y, d;
-    P(){}
-    P(int x, int y):x(x),y(y){}
+    int x, y, d, t;
+    P(){ d=t=0; }
+	P(int x, int y):x(x),y(y){ d=t=0; }
     P operator +(const P&p){ return P(x+p.x, y+p.y); }
     P operator -(const P&p){ return P(x-p.x, y-p.y); }    
     bool ok(){ return (x>=0 && y>=0 && x<n && y<n); }
@@ -112,7 +112,7 @@ struct P{
 vp work, snow;
 vs ret;
 bool SNOW[N+10][N+10], WORK[N+10][N+10];
-P d[4]={P(-1,0),P(1,0),P(0,-1),P(0,1)}; //up down left right
+P d[]={P(-1,0),P(1,0),P(0,-1),P(0,1),P(-2,0),P(2,0),P(0,-2),P(0,2),P(-1,1),P(1,-1),P(-1,-1),P(1,1)}; //up down left right
 char c[5]="UDLR";
 int x, y;
 double Snf, day, snf;
@@ -141,9 +141,17 @@ public:
         }
     }
     char gao(int i){
-        int ret=rand()%4;
-        if (! (d[ret]+work[i]).ok() ) return -1;
-        return ret;
+		if (work[i].t && (d[work[i].d]+work[i]).ok()){
+			work[i].t--;
+			return work[i].d;
+		}
+		while(1){
+			int ret=rand()%4;
+			if ((d[ret]+work[i]).ok()) {
+				work[i].d=ret, work[i].t=5;
+				return ret;
+			}
+		}
     }    
     void move(int i, int k){
         if (k!=-1){
@@ -158,11 +166,26 @@ public:
         srand(time(NULL));
         Snf=day= snf=0;
     }
+
+	int bcc[N+10][N+10];
+	bool v[N*N+10];
+	int cnt;
+	void dfs(P p){
+		bcc[p.x][p.y]=cnt;
+		rep(k, 4){
+			P q=p+d[k];
+			if (q.ok() && !bcc[q.x][q.y] && SNOW[q.x][q.y]) dfs(q);
+		}
+	}
+
     vs nextDay(vi s){
         snow.clear(), ret.clear();
         
         rep(i, sz(s)/2) SNOW[s[i*2]][s[i*2+1]]=1;
         rep(i, n) rep(j, n) if (SNOW[i][j]) snow.pb(P(i,j));
+
+		clr(v, 0), clr(bcc, 0),  cnt=0;
+		rep(i, n) rep(j, n) if (!bcc[i][j] && SNOW[i][j]) ++cnt, dfs(P(i, j));
         
         mcmf.s=sz(work)+sz(snow), mcmf.t=mcmf.s+1;
         mcmf.clear();
@@ -181,24 +204,19 @@ public:
             if (e.cap==0 && j>=0 && j<sz(snow))
                 w2s[i]=j, s2w[j]=i;
         }
-        rep(i, sz(work))                                                             //Move Worker
+        rep(i, sz(work))
             if (w2s[i]!=-1)
-                move(i, drct(i, w2s[i]));    
+                move(i, drct(i, w2s[i])), v[bcc[snow[j].x][snow[j].y]]=1;
             else
                 move(i, gao(i));
-
-        
+				
         Snf+=sz(s), day++;
-
-        snf=(int)min(snf+4.5, Snf/day-4.5);
-
-       // cerr<<Snf/day<<' '<<snf<<endl;
-
+        snf=max(4, (int)min(snf+n/4, Snf/day-n/4));
         int mw=min(100, (int)(sqrt(snf * fine / pay) * n / 4));
         
-        snow.clear();                                                               //Hire Worker
+        snow.clear(); 
         rep(i, n) rep(j, n) if (SNOW[i][j]) snow.pb(P(i,j));
-        rep(i, sz(snow)) if (sz(work)<mw && s2w[i]==-1){
+        rep(i, sz(snow)) if (sz(work)<mw && s2w[i]==-1 && v[bcc[snow[i].x][snow[i].y]]==0){
             work.pb(snow[i]), ret.pb("H "+dtoi(snow[i].x)+' '+dtoi(snow[i].y));
             SNOW[snow[i].x][snow[i].y]=0;
         }
