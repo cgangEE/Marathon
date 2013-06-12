@@ -54,8 +54,9 @@ struct P{
 
 struct C{
 	P p; double r, m;
+	int i;
 	C(){}
-	C(double x, double y, double r, double m):p(P(x,y)), r(r), m(m){}
+	C(int i, double x, double y, double r, double m):i(i),p(P(x,y)), r(r), m(m){}
 };
 
 
@@ -65,7 +66,7 @@ vector<P> p;
 
 void move(C &c, C &c2, double  d){
 	P v=c.p-c2.p;
-	c.p=c.p+v*(5*d/v.len());
+	c.p=c.p+v*(2.1*d/v.len());
 }
 
 void spread(){
@@ -76,7 +77,8 @@ void spread(){
 				double d=c[i].p.dis(c[j].p);
 				if (d>c[i].r+c[j].r+eps) continue;
 			//	cerr<<d<<endl;
-				if (c[i].m<c[j].m) move(c[i], c[j], c[i].r+c[j].r-d);
+				if (c[i].m<c[j].m)
+				move(c[i], c[j], c[i].r+c[j].r-d);
 				else move(c[j], c[i], c[i].r+c[j].r-d);
 
 				/*
@@ -104,23 +106,29 @@ void gather(){
 				}
 			}
 			if (!cross){
-				c[i].p=pp; break;
+				c[i].p=pp;
 			}
 		}
 }
+
+
+bool cmpM(const C &a, const C &b){ return a.m<b.m; }
+bool cmpI(const C &a, const C &b){ return a.i<b.i; }
 
 class CirclesSeparation{
 public:
 	vd minimumWork(vd x, vd y, vd r, vd m){
 		n=sz(x), c.clear(), p.clear();
 		rep(i, n) p.pb(P(x[i], y[i]));
-		rep(i, n) c.pb(C(x[i], y[i], r[i], m[i]));
+		rep(i, n) c.pb(C(i, x[i], y[i], r[i], m[i]));
+//		sort(all(c), cmpM);
 
 		
 		spread();
 		gather();
 
 
+		sort(all(c), cmpI);
 		vd ret;
 		rep(i, n) ret.pb(c[i].p.x), ret.pb(c[i].p.y);
 		return ret;
