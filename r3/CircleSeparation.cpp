@@ -16,7 +16,6 @@
 using namespace std;
 typedef vector<int> vi;
 typedef map<int,int> mii;
-typedef long long ll;
 template <class T> void checkmax(T &t, T x){if (x > t) t = x;}
 template <class T> void checkmin(T &t, T x){if (x < t) t = x;}
 template <class T> void _checkmax(T &t, T x){if (t == -1 || x > t) t = x;}
@@ -40,7 +39,6 @@ typedef vector<double> vd;
 const double eps=1e-9;
 int sgn(double d){ return d<-eps?-1:d>eps; }
 
-int i,j,k,m,n,l;
 
 struct P{
 	double x, y;
@@ -60,27 +58,69 @@ struct C{
 	C(double x, double y, double r, double m):p(P(x,y)), r(r), m(m){}
 };
 
-class CirclesSeparation{
-public:
-	vd minimunWork(vd x, vd y, vd r, vd m){
-		n=sz(x);
-		vector<C> c;
-		rep(i, n) c.pb(C(x[i], y[i], r[i], m[i]));
+
+int i,j,k,m,n,l;
+vector<C> c;
+vector<P> p;
+
+void move(C &c, C &c2, double  d){
+	P v=c.p-c2.p;
+	c.p=c.p+v*(5*d/v.len());
+}
+
+void spread(){
 		bool flag=true;
 		while (flag){
 			flag=false;
 			rep(i, n) repf(j, i+1, n-1){
 				double d=c[i].p.dis(c[j].p);
-				if (sgn(c[i].r+c[j].r-d)<0) continue;
+				if (d>c[i].r+c[j].r+eps) continue;
+			//	cerr<<d<<endl;
+				if (c[i].m<c[j].m) move(c[i], c[j], c[i].r+c[j].r-d);
+				else move(c[j], c[i], c[i].r+c[j].r-d);
+
+				/*
+
 				double x=c[j].m/(c[i].m+c[j].m)*(c[i].r+c[j].r-d);
 				double y=c[i].m/(c[i].m+c[j].m)*(c[i].r+c[j].r-d);
 				P v=c[i].p-c[j].p;
-				c[i].p=c[i].p+v*((1+0.9)*x/v.len());
-				c[j].p=c[j].p-v*((1+0.9)*y/v.len());
-		//		if (i==j-1) cerr<<i<<' '<<j<<' '<<c[i].r+c[j].r-d<<endl;
+				c[i].p=c[i].p+v*((1+0.90)*x/v.len());
+				c[j].p=c[j].p-v*((1+0.90)*y/v.len());
+				*/
 				flag=true;
 			}
 		}
+}
+
+void gather(){
+	for (double etha=0.9; etha>=0.1; etha-=0.1)
+		rep(i, n){// rep(j, 360){
+			P pp=p[i]+(c[i].p-p[i])*etha;
+			bool cross=false;
+			rep(k, n) if (i!=k){
+				double d=pp.dis(c[k].p);
+				if (d<=c[i].r+c[k].r+eps){
+				   cross=true; break;
+				}
+			}
+			if (!cross){
+				c[i].p=pp; break;
+			}
+		}
+}
+
+class CirclesSeparation{
+public:
+	vd minimumWork(vd x, vd y, vd r, vd m){
+		n=sz(x), c.clear(), p.clear();
+		rep(i, n) p.pb(P(x[i], y[i]));
+		rep(i, n) c.pb(C(x[i], y[i], r[i], m[i]));
+
+		
+		spread();
+		gather();
+
+
 		vd ret;
 		rep(i, n) ret.pb(c[i].p.x), ret.pb(c[i].p.y);
 		return ret;
@@ -100,7 +140,7 @@ int main(){
 	rep(i, n) scanf("%lf", &k), m.pb(k);
 
 	CirclesSeparation xxx;
-	ret=xxx.minimunWork(x, y, r, m);
+	ret=xxx.minimumWork(x, y, r, m);
 
 	rep(i, 2*n) printf("%lf\n", ret[i]);
 	cout.flush();
