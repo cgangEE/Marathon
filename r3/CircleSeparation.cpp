@@ -48,15 +48,22 @@ struct P{
 	P operator -(const P &p)const{ return P(x-p.x, y-p.y); }
 	P operator *(double k)const{ return P(x*k, y*k); }
 	P operator /(double k)const{ return P(x/k, y/k); }
+	P rl(double ang)const{
+		double c=cos(ang), s=sin(ang);
+		return P(x*c-y*s, y*c+x*s);
+	}
+	P rr(double ang)const{
+		double c=cos(ang), s=sin(ang);
+		return P(x*c+y*s, y*c-x*s);
+	}
 	double dis(P &p){ return sqrt(SQR(x-p.x)+SQR(y-p.y));}
 	double len(){ return sqrt(SQR(x)+SQR(y)); }
 };
 
 struct C{
 	P p; double r, m;
-	int i;
 	C(){}
-	C(int i, double x, double y, double r, double m):i(i),p(P(x,y)), r(r), m(m){}
+	C(double x, double y, double r, double m):p(P(x,y)), r(r), m(m){}
 };
 
 
@@ -64,71 +71,71 @@ int i,j,k,m,n,l;
 vector<C> c;
 vector<P> p;
 
-void move(C &c, C &c2, double  d){
+inline void move(C &c, C &c2, double  d){
 	P v=c.p-c2.p;
-	c.p=c.p+v*(2.1*d/v.len());
+	c.p=c.p+v*(3.5*d/v.len());
 }
 
 void spread(){
-		bool flag=true;
-		while (flag){
-			flag=false;
-			rep(i, n) repf(j, i+1, n-1){
-				double d=c[i].p.dis(c[j].p);
-				if (d>c[i].r+c[j].r+eps) continue;
-			//	cerr<<d<<endl;
-				if (c[i].m<c[j].m)
-				move(c[i], c[j], c[i].r+c[j].r-d);
-				else move(c[j], c[i], c[i].r+c[j].r-d);
-
-				/*
-
-				double x=c[j].m/(c[i].m+c[j].m)*(c[i].r+c[j].r-d);
-				double y=c[i].m/(c[i].m+c[j].m)*(c[i].r+c[j].r-d);
-				P v=c[i].p-c[j].p;
-				c[i].p=c[i].p+v*((1+0.90)*x/v.len());
-				c[j].p=c[j].p-v*((1+0.90)*y/v.len());
-				*/
+	bool flag=true;
+	while (flag){
+		flag=false;
+		rep(i, n) repf(j, i+1, n-1){
+			double d=c[i].p.dis(c[j].p);
+			if (d<c[i].r+c[j].r+eps){
+				if (c[i].m<c[j].m) 
+					move(c[i], c[j], c[i].r+c[j].r-d);
+				else 
+					move(c[j], c[i], c[i].r+c[j].r-d);
 				flag=true;
 			}
 		}
+	}
 }
 
 void gather(){
-	for (double etha=0.9; etha>=0.1; etha-=0.1)
-		rep(i, n){// rep(j, 360){
-			P pp=p[i]+(c[i].p-p[i])*etha;
-			bool cross=false;
-			rep(k, n) if (i!=k){
-				double d=pp.dis(c[k].p);
-				if (d<=c[i].r+c[k].r+eps){
-				   cross=true; break;
+	for (double etha=0.1; etha<=0.9; etha+=0.1) 
+		rep(i, n)
+		for (double ang=0; ang<3.14; ang+=0.01){
+			P pp=p[i]+(c[i].p-p[i]).rl(ang)*etha;
+			bool flag=false;
+			rep(j, n) if (i!=j){
+				double d=pp.dis(c[j].p);
+				if (d<=c[i].r+c[j].r+eps){
+					flag=true; break;
 				}
 			}
-			if (!cross){
-				c[i].p=pp;
+			if (!flag){ c[i].p=pp; break;}
+
+			pp=p[i]+(c[i].p-p[i]).rr(ang)*etha;
+			flag=false;
+			rep(j, n) if (i!=j){
+				double d=pp.dis(c[j].p);
+				if (d<=c[i].r+c[j].r+eps){
+					flag=true; break;
+				}
 			}
+			if (!flag){ c[i].p=pp; break;}
 		}
 }
-
-
-bool cmpM(const C &a, const C &b){ return a.m<b.m; }
-bool cmpI(const C &a, const C &b){ return a.i<b.i; }
 
 class CirclesSeparation{
 public:
 	vd minimumWork(vd x, vd y, vd r, vd m){
 		n=sz(x), c.clear(), p.clear();
 		rep(i, n) p.pb(P(x[i], y[i]));
-		rep(i, n) c.pb(C(i, x[i], y[i], r[i], m[i]));
-//		sort(all(c), cmpM);
+		rep(i, n) c.pb(C(x[i], y[i], r[i], m[i]));
 
-		
 		spread();
 		gather();
 
+		double xx=INT_MAX;
+		rep(i, n) rep(j, n) if (i!=j){
+			double d=c[i].p.dis(c[j].p);
+				_checkmin(xx, d-c[i].r-c[j].r);
+		}
+		cerr<<xx<<endl;
 
-		sort(all(c), cmpI);
 		vd ret;
 		rep(i, n) ret.pb(c[i].p.x), ret.pb(c[i].p.y);
 		return ret;
@@ -136,7 +143,7 @@ public:
 };
 
 int main(){
-	cerr<<"ft"<<endl;
+	cerr<<"ft2"<<endl;
 	int n;
 	vd x, y, r, m, ret;
 	double k;

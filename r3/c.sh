@@ -1,2 +1,2 @@
-g++ CircleSeparation.cpp -o CircleSeparation
-java -jar CirclesSeparationVis.jar -exec ./CircleSeparation
+g++ CircleSeparation.cpp 
+java -jar jjj.jar -exec ./a.out -seed 6
