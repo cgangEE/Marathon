@@ -37,8 +37,6 @@ template <class T> void _checkmin(T &t, T x){if (t == -1 || x < t) t = x;}
 typedef vector<double> vd;
 
 const double eps=1e-9;
-int sgn(double d){ return d<-eps?-1:d>eps; }
-
 
 struct P{
 	double x, y;
@@ -61,9 +59,10 @@ struct P{
 };
 
 struct C{
+	int i;
 	P p; double r, m;
 	C(){}
-	C(double x, double y, double r, double m):p(P(x,y)), r(r), m(m){}
+	C(int i, P p, double r, double m):i(i),p(p),r(r),m(m){}
 };
 
 
@@ -71,71 +70,31 @@ int i,j,k,m,n,l;
 vector<C> c;
 vector<P> p;
 
-inline void move(C &c, C &c2, double  d){
-	P v=c.p-c2.p;
-	c.p=c.p+v*(3.5*d/v.len());
-}
+bool cmpM(const C &a, const C &b){return a.m*b.r>b.m*a.r; }
+bool cmpI(const C &a, const C &b){return a.i<b.i; }
 
-void spread(){
-	bool flag=true;
-	while (flag){
-		flag=false;
-		rep(i, n) repf(j, i+1, n-1){
-			double d=c[i].p.dis(c[j].p);
-			if (d<c[i].r+c[j].r+eps){
-				if (c[i].m<c[j].m) 
-					move(c[i], c[j], c[i].r+c[j].r-d);
-				else 
-					move(c[j], c[i], c[i].r+c[j].r-d);
-				flag=true;
-			}
-		}
-	}
-}
-
-void gather(){
-	for (double etha=0.1; etha<=0.9; etha+=0.1) 
-		rep(i, n)
-		for (double ang=0; ang<3.14; ang+=0.01){
-			P pp=p[i]+(c[i].p-p[i]).rl(ang)*etha;
-			bool flag=false;
-			rep(j, n) if (i!=j){
-				double d=pp.dis(c[j].p);
-				if (d<=c[i].r+c[j].r+eps){
-					flag=true; break;
-				}
-			}
-			if (!flag){ c[i].p=pp; break;}
-
-			pp=p[i]+(c[i].p-p[i]).rr(ang)*etha;
-			flag=false;
-			rep(j, n) if (i!=j){
-				double d=pp.dis(c[j].p);
-				if (d<=c[i].r+c[j].r+eps){
-					flag=true; break;
-				}
-			}
-			if (!flag){ c[i].p=pp; break;}
-		}
+inline void gao(int i){
+    for (double d=0; d<=9; d+=0.01) for (double ang=0; ang<3.14*2; ang+=0.01){
+        P v=P(cos(ang), sin(ang))*d+c[i].p;
+        bool flag=true;
+        repf(j, 0, i-1) if (SQR(v.x-c[j].p.x)+SQR(v.y-c[j].p.y)<SQR(c[i].r+c[j].r+eps)){
+            flag=false; break;
+        }
+        if (flag){
+            c[i].p=v; return;
+        }
+    }
 }
 
 class CirclesSeparation{
 public:
 	vd minimumWork(vd x, vd y, vd r, vd m){
 		n=sz(x), c.clear(), p.clear();
-		rep(i, n) p.pb(P(x[i], y[i]));
-		rep(i, n) c.pb(C(x[i], y[i], r[i], m[i]));
+		rep(i, n) p.pb(P(x[i], y[i])), c.pb(C(i, p[i], r[i], m[i]));
+		sort(all(c), cmpM);
+		rep(i, n) gao(i);
 
-		spread();
-		gather();
-
-		double xx=INT_MAX;
-		rep(i, n) rep(j, n) if (i!=j){
-			double d=c[i].p.dis(c[j].p);
-				_checkmin(xx, d-c[i].r-c[j].r);
-		}
-		cerr<<xx<<endl;
-
+		sort(all(c), cmpI);
 		vd ret;
 		rep(i, n) ret.pb(c[i].p.x), ret.pb(c[i].p.y);
 		return ret;
@@ -143,7 +102,6 @@ public:
 };
 
 int main(){
-	cerr<<"ft2"<<endl;
 	int n;
 	vd x, y, r, m, ret;
 	double k;
@@ -157,7 +115,7 @@ int main(){
 	CirclesSeparation xxx;
 	ret=xxx.minimumWork(x, y, r, m);
 
-	rep(i, 2*n) printf("%lf\n", ret[i]);
+	rep(i, 2*n) printf("%.12lf\n", ret[i]);
 	cout.flush();
 	return 0;
 }
